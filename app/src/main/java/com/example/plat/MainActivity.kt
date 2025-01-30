@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +19,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.plat.ui.theme.PLATTheme
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,130 +29,156 @@ class MainActivity : ComponentActivity() {
         setContent {
             PLATTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { vnutrenniyOtstup ->
-                    RegistrationScreen(modifier = Modifier.padding(vnutrenniyOtstup))
+                    MessengerScreen(modifier = Modifier.padding(vnutrenniyOtstup))
                 }
             }
         }
     }
 }
 
-@Composable
-fun RegistrationScreen(modifier: Modifier = Modifier) {
-    var name by remember { mutableStateOf(TextFieldValue("")) }
-    var email by remember { mutableStateOf(TextFieldValue("")) }
-    var password by remember { mutableStateOf(TextFieldValue("")) }
-    var errorMessage by remember { mutableStateOf("") }
+data class Soobshenie(
+    val tekst: String,
+    val vremya: String
+)
 
-    fun validateAndRegister() {
-        if (name.text.isBlank() || email.text.isBlank() || password.text.isBlank()) {
-            errorMessage = "Все поля обязательны для заполнения"
-        } else {
-            // Логика для регистрации пользователя (например, отправка данных на сервер)
-            errorMessage = ""
-            // В этом месте можно добавить логику для перехода на другой экран после успешной регистрации
-        }
+@Composable
+fun MessengerScreen(modifier: Modifier = Modifier) {
+    var spisokChatov by remember { mutableStateOf(listOf("Чат 1", "Чат 2", "Чат 3")) }
+    var vybrannyyChatIndex by remember { mutableStateOf(0) }
+    val soobsheniyaDlyaChatov = remember {
+        mutableStateListOf(
+            mutableStateListOf<Soobshenie>(),
+            mutableStateListOf<Soobshenie>(),
+            mutableStateListOf<Soobshenie>()
+        )
+    }
+    var tekushcheeSoobshenie by remember { mutableStateOf(TextFieldValue("")) }
+    var spisokChatovVidim by remember { mutableStateOf(true) }
+
+    fun otpravitSoobshenie() {
+        if (tekushcheeSoobshenie.text.isBlank()) return
+
+        val tekushcheeVremya = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        soobsheniyaDlyaChatov[vybrannyyChatIndex].add(
+            Soobshenie(tekst = tekushcheeSoobshenie.text, vremya = tekushcheeVremya)
+        )
+        tekushcheeSoobshenie = TextFieldValue("")
     }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            "Регистрация",
-            style = MaterialTheme.typography.titleLarge, // Используем titleLarge вместо h4
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+    fun dobavitChat() {
+        spisokChatov = spisokChatov + "Новый чат ${spisokChatov.size + 1}"
+        soobsheniyaDlyaChatov.add(mutableStateListOf())
+    }
 
-        // Имя
-        BasicTextField(
-            value = name,
-            onValueChange = { name = it },
+    Column(modifier = modifier.fillMaxSize()) {
+        // кнопки (вверх)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
-                .border(1.dp, MaterialTheme.colorScheme.primary)
-                .background(Color.White),
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp)
-                ) {
-                    if (name.text.isEmpty()) {
-                        Text(text = "Введите имя", color = Color.Gray)
-                    }
-                    innerTextField()
-                }
-            }
-        )
-
-        // Email
-        BasicTextField(
-            value = email,
-            onValueChange = { email = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .border(1.dp, MaterialTheme.colorScheme.primary)
-                .background(Color.White)
                 .padding(8.dp),
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp)
-                ) {
-                    if (email.text.isEmpty()) {
-                        Text(text = "Введите email", color = Color.Gray)
-                    }
-                    innerTextField()
-                }
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(onClick = { spisokChatovVidim = !spisokChatovVidim }) {
+                Text(if (spisokChatovVidim) "Скрыть чаты" else "Показать чаты")
             }
-        )
-
-        // Пароль
-        BasicTextField(
-            value = password,
-            onValueChange = { password = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .border(1.dp, MaterialTheme.colorScheme.primary)
-                .background(Color.White),
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp)
-                ) {
-                    if (password.text.isEmpty()) {
-                        Text(text = "Введите пароль", color = Color.Gray)
-                    }
-                    innerTextField()
-                }
+            Button(onClick = { dobavitChat() }) {
+                Text("Добавить чат")
             }
-        )
-
-        // Сообщение об ошибке
-        if (errorMessage.isNotEmpty()) {
-            Text(text = errorMessage, color = Color.Red, modifier = Modifier.padding(8.dp))
         }
 
-        // Кнопка регистрации
-        Button(
-            onClick = { validateAndRegister() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
-        ) {
-            Text("Зарегистрироваться")
+        Row(modifier = Modifier.fillMaxSize()) {
+            // список чатов
+            if (spisokChatovVidim) {
+                LazyColumn(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .padding(8.dp)
+                ) {
+                    items(spisokChatov.size) { index ->
+                        val vybran = index == vybrannyyChatIndex
+                        Text(
+                            text = spisokChatov[index],
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .background(if (vybran) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .clickable { vybrannyyChatIndex = index },
+                            color = if (vybran) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            // сообщения и текст(ввод)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    items(soobsheniyaDlyaChatov[vybrannyyChatIndex]) { soobshenie ->
+                        Text(
+                            text = "${soobshenie.tekst} (${soobshenie.vremya})",
+                            modifier = Modifier.padding(8.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    BasicTextField(
+                        value = tekushcheeSoobshenie,
+                        onValueChange = { tekushcheeSoobshenie = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp)
+                            .height(56.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.primary)
+                            .background(Color.White),
+                        decorationBox = { vnutrenniyTextField ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp)
+                            ) {
+                                if (tekushcheeSoobshenie.text.isEmpty()) {
+                                    Text(
+                                        text = "Введите сообщение",
+                                        color = Color.Gray
+                                    )
+                                }
+                                vnutrenniyTextField()
+                            }
+                        }
+                    )
+                    Button(
+                        onClick = { otpravitSoobshenie() },
+                        modifier = Modifier.alignByBaseline()
+                    ) {
+                        Text("Отправить")
+                    }
+                }
+            }
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun RegistrationScreenPreview() {
+fun MessengerScreenPreview() {
     PLATTheme {
-        RegistrationScreen()
+        MessengerScreen()
     }
 }
-
-//для проверки работы гита
